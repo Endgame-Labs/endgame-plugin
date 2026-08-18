@@ -1,0 +1,31 @@
+{
+  "name": "endgame-plugins",
+  "description": "Official Claude plugin from Endgame for GTM teams.",
+  "owner": {
+    "name": "Endgame",
+    "email": "support@endgame.io",
+    "url": "https://endgame.io"
+  },
+  "plugins": [
+    {
+      "name": "endgame",
+      "displayName": "Endgame",
+      "description": "Use your Endgame customer and prospect context to prepare for meetings, write follow-ups, review pipeline and calls, map stakeholders, summarize customer evidence, and more.",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/Endgame-Labs/endgame-plugin.git",
+        "sha": "61ece000f77ec8c8609b001774b3b7bd6de9d00f"
+      },
+      "category": "sales",
+      "tags": [
+        "endgame",
+        "gtm",
+        "sales",
+        "revenue",
+        "pipeline",
+        "meeting-prep",
+        "customer-intelligence"
+      ]
+    }
+  ]
+}
