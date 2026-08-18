@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "endgame": {
+      "type": "http",
+      "url": "https://app.endgame.io/api/v1/mcp"
+    }
+  }
+}

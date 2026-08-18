@@ -1,0 +1,29 @@
+{
+  "name": "endgame",
+  "displayName": "Endgame",
+  "version": "0.1.6",
+  "description": "Use your Endgame customer and prospect context to prepare for meetings, write follow-ups, review pipeline and calls, map stakeholders, summarize customer evidence, and more.",
+  "author": {
+    "name": "Endgame",
+    "email": "support@endgame.io",
+    "url": "https://endgame.io"
+  },
+  "homepage": "https://endgame.io",
+  "repository": "https://github.com/Endgame-Labs/endgame-plugin",
+  "license": "MIT",
+  "mcpServers": "./mcp/endgame.json",
+  "keywords": [
+    "endgame",
+    "gtm",
+    "sales",
+    "crm",
+    "pipeline",
+    "account-brief",
+    "meeting-prep",
+    "meeting-follow-up",
+    "call-review",
+    "stakeholder-map",
+    "customer-evidence",
+    "mcp"
+  ]
+}
