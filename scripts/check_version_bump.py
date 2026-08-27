@@ -44,7 +44,6 @@ def manifest_version(revision: str) -> str:
     version = manifest.get("version")
     if not isinstance(version, str) or not version:
         raise ValueError(f"{revision} has no plugin manifest version")
-    semantic_version(version)
     return version
 
 

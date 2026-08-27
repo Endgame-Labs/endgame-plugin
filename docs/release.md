@@ -24,9 +24,8 @@ dist/endgame-plugin-<manifest-version>.zip
 The builder includes the plugin manifest, license, MCP configuration, and every
 tracked file under the seven approved public skill directories. It uses sorted
 paths and fixed ZIP timestamps, rejects unsafe paths, untracked skill resources,
-and non-file Git entries, and reads packaged bytes and modes directly from
-`HEAD`. It verifies that the ZIP file list exactly matches the committed Git
-runtime payload, so uncommitted working-tree changes cannot alter the archive.
+and dirty packaged files, and verifies that the ZIP file list exactly matches
+the committed Git runtime payload.
 
 ## Prepare A Release
 
@@ -58,9 +57,7 @@ new deterministic build; it never replaces published assets.
 `.claude-plugin/plugin.json` is the sole plugin version source. Claude uses that
 version as its cache key, so every runtime change requires a version bump. Pull
 request CI enforces this rule and requires the new semantic version to be
-greater than the version on the current `main` branch. The `main` ruleset uses
-strict required checks so a stale pull request must revalidate after another
-runtime release merges.
+greater than the version on the current `main` branch.
 
 The Endgame-hosted marketplace uses `"source": "./"`, so Git installations and
 tagged archives derive from the same repository content. After Anthropic accepts

@@ -35,6 +35,9 @@ jobs:
       - name: Verify tag and plugin version
         run: |
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          tag_commit="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{}")"
+          test "$tag_commit" = "$(git rev-parse --verify HEAD)"
+          git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main
           python scripts/check_release_tag.py "$RELEASE_TAG"
 
       - name: Run repository checks
