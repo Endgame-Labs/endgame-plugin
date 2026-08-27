@@ -28,8 +28,7 @@ REQUIRED_FILES = [
 ]
 ENDGAME_MCP_URL = "https://app.endgame.io/api/v1/mcp"
 MARKETPLACE_NAME = "endgame-plugins"
-MARKETPLACE_REPO_URL = "https://github.com/Endgame-Labs/endgame-plugin.git"
-MARKETPLACE_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+MARKETPLACE_SOURCE = "./"
 MARKETPLACE_DESCRIPTION = "Official Claude plugin from Endgame for GTM teams."
 PLUGIN_DESCRIPTION = (
     "Use your Endgame customer and prospect context to prepare for meetings, "
@@ -302,42 +301,8 @@ def validate_marketplace(manifest: dict[str, Any], errors: list[str]) -> None:
     if set(plugin.get("tags", [])) != MARKETPLACE_TAGS:
         errors.append("marketplace plugin tags must match the external discovery set")
 
-    source = plugin.get("source")
-    if not isinstance(source, dict):
-        errors.append("marketplace plugin source must be a pinned Git source")
-        return
-
-    if source.get("source") != "url" or source.get("url") != MARKETPLACE_REPO_URL:
-        errors.append(f"marketplace source must use repo {MARKETPLACE_REPO_URL}")
-
-    sha = source.get("sha")
-    if not isinstance(sha, str) or not MARKETPLACE_SHA_RE.fullmatch(sha):
-        errors.append("marketplace source must use a full 40-character commit SHA")
-        return
-    if "ref" in source:
-        errors.append("marketplace source must not use a floating ref")
-
-    try:
-        pinned_manifest = json.loads(
-            git_output(["show", f"{sha}:.claude-plugin/plugin.json"])
-        )
-        pinned_skills = set(
-            git_output(["ls-tree", "--name-only", f"{sha}:skills"]).splitlines()
-        )
-    except (json.JSONDecodeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"marketplace source commit is not a valid plugin revision: {exc}")
-        return
-
-    for field in ["name", "version", "mcpServers"]:
-        if pinned_manifest.get(field) != manifest.get(field):
-            errors.append(f"marketplace source {field} must match the plugin manifest")
-
-    missing_skills = set(REQUIRED_SKILLS) - pinned_skills
-    if missing_skills:
-        errors.append(
-            "marketplace source is missing required skills: "
-            + ", ".join(sorted(missing_skills))
-        )
+    if plugin.get("source") != MARKETPLACE_SOURCE:
+        errors.append(f"marketplace plugin source must be {MARKETPLACE_SOURCE}")
 
 
 def main() -> int:

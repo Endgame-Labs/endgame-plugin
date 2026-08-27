@@ -9,6 +9,8 @@ This repository contains the official Endgame plugin package.
 - Keep MCP connector assets under `mcp/` and never commit connector credentials.
 - Keep scripts dependency-light and runnable with the system Python.
 - Do not add generated files, local credentials, or exported customer data.
+- Bump `.claude-plugin/plugin.json` whenever a pull request changes the plugin
+  manifest, MCP configuration, license, or any file under a public skill.
 
 ## Local Checks
 
@@ -24,6 +26,7 @@ The individual commands are:
 make fmt
 make lint
 make validate
+make test
 make package
 make smoke
 make smoke-package
@@ -31,6 +34,7 @@ make smoke-package
 
 `make fmt` normalizes JSON metadata. `make lint` checks text hygiene.
 `make validate` checks the plugin manifest and expected package layout.
+`make test` verifies the public Git and ZIP distribution contract.
 `make package` builds the ignored ZIP artifact. `make smoke` and
 `make smoke-package` require Claude Code and confirm MCP discovery from source
 and packaged forms.

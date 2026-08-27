@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt format lint validate package smoke smoke-package check
+.PHONY: help fmt format lint validate test package smoke smoke-package check
 
 help:
 	@printf '%s\n' "Usage: make <target>" ""
@@ -11,6 +11,7 @@ help:
 	@printf '  %-12s %s\n' "format" "Alias for fmt"
 	@printf '  %-12s %s\n' "lint" "Run repository hygiene checks"
 	@printf '  %-12s %s\n' "validate" "Validate Claude plugin manifest and layout"
+	@printf '  %-12s %s\n' "test" "Test the public distribution and package contract"
 	@printf '  %-12s %s\n' "package" "Build an installable plugin ZIP under dist"
 	@printf '  %-12s %s\n' "smoke" "Confirm Claude discovers the bundled Endgame MCP server"
 	@printf '  %-12s %s\n' "smoke-package" "Confirm Claude discovers MCP from the packaged ZIP"
@@ -27,6 +28,9 @@ lint:
 validate:
 	python3 scripts/validate_plugin.py
 
+test:
+	python3 -m unittest discover -s tests -v
+
 package: check
 	python3 scripts/package_plugin.py
 
@@ -36,4 +40,4 @@ smoke:
 smoke-package: package
 	python3 scripts/smoke_plugin.py --package
 
-check: lint validate
+check: lint validate test
