@@ -14,17 +14,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
 DIST = ROOT / "dist"
-PACKAGE_FILES = [
+PACKAGE_ROOT_FILES = [
     ".claude-plugin/plugin.json",
     "LICENSE",
     "mcp/endgame.json",
-    "skills/account-brief/SKILL.md",
-    "skills/call-review/SKILL.md",
-    "skills/customer-evidence/SKILL.md",
-    "skills/meeting-follow-up/SKILL.md",
-    "skills/meeting-prep/SKILL.md",
-    "skills/pipeline-review/SKILL.md",
-    "skills/stakeholder-map/SKILL.md",
+]
+PUBLIC_SKILLS = [
+    "account-brief",
+    "call-review",
+    "customer-evidence",
+    "meeting-follow-up",
+    "meeting-prep",
+    "pipeline-review",
+    "stakeholder-map",
 ]
 ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 
@@ -37,22 +39,55 @@ def package_version() -> str:
     return version
 
 
-def source_files() -> list[Path]:
-    paths = [ROOT / name for name in PACKAGE_FILES]
+def package_names_from(tracked: set[str]) -> list[str]:
+    names = set(PACKAGE_ROOT_FILES)
+    for skill in PUBLIC_SKILLS:
+        prefix = f"skills/{skill}/"
+        skill_files = {name for name in tracked if name.startswith(prefix)}
+        skill_entrypoint = f"{prefix}SKILL.md"
+        if skill_entrypoint not in skill_files:
+            raise ValueError(f"package source is missing required skill: {skill_entrypoint}")
+        names.update(skill_files)
 
-    candidates = sorted(set(paths), key=lambda path: path.relative_to(ROOT).as_posix())
-    tracked = {
-        ROOT / name
-        for name in subprocess.check_output(
+    missing = sorted(name for name in names if name not in tracked)
+    if missing:
+        raise ValueError(f"package source contains untracked files: {', '.join(missing)}")
+
+    return sorted(names)
+
+
+def package_names() -> list[str]:
+    tracked = set(
+        subprocess.check_output(
             ["git", "-C", str(ROOT), "ls-files"], text=True
         ).splitlines()
-    }
-    untracked = [path for path in candidates if path not in tracked]
-    if untracked:
-        names = ", ".join(path.relative_to(ROOT).as_posix() for path in untracked)
-        raise ValueError(f"package source contains untracked files: {names}")
+    )
+    names = package_names_from(tracked)
+
+    untracked_runtime = []
+    for name in subprocess.check_output(
+        ["git", "-C", str(ROOT), "ls-files", "--others", "--exclude-standard"],
+        text=True,
+    ).splitlines():
+        if any(name.startswith(f"skills/{skill}/") for skill in PUBLIC_SKILLS):
+            untracked_runtime.append(name)
+    if untracked_runtime:
+        raise ValueError(
+            "public skill directories contain untracked runtime files: "
+            + ", ".join(sorted(untracked_runtime))
+        )
+
+    return names
+
+
+def source_files() -> list[Path]:
+    candidates = [ROOT / name for name in package_names()]
 
     for path in candidates:
+        if not path.is_file():
+            raise ValueError(
+                f"package source must be a regular file: {path.relative_to(ROOT)}"
+            )
         if path.is_symlink():
             raise ValueError(f"package source must not be a symlink: {path.relative_to(ROOT)}")
 
@@ -75,7 +110,7 @@ def write_archive(output: Path) -> None:
 
 
 def verify_archive(output: Path, name: str, version: str) -> None:
-    required = set(PACKAGE_FILES)
+    required = set(package_names())
     forbidden = {"skills/user-context/SKILL.md"}
     with zipfile.ZipFile(output) as archive:
         names = archive.namelist()
@@ -84,6 +119,9 @@ def verify_archive(output: Path, name: str, version: str) -> None:
         if required - set(names):
             missing = ", ".join(sorted(required - set(names)))
             raise ValueError(f"plugin package is missing required files: {missing}")
+        if set(names) - required:
+            unexpected = ", ".join(sorted(set(names) - required))
+            raise ValueError(f"plugin package contains unexpected files: {unexpected}")
         if forbidden & set(names):
             unexpected = ", ".join(sorted(forbidden & set(names)))
             raise ValueError(f"plugin package contains removed files: {unexpected}")

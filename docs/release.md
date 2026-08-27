@@ -1,50 +1,71 @@
 # Packaging And Release
 
-## Build An Installable Archive
+Git is the canonical plugin package. The self-hosted marketplace resolves the
+plugin from the repository root, and the release ZIP is a deterministic
+rendering of the same tracked runtime files.
+
+## Build And Verify Locally
 
 Run from the repository root:
 
 ```bash
+make check
+claude plugin validate . --strict
 make package
+make smoke-package
 ```
 
-Build release candidates from a clean commit and record that commit alongside
-the generated checksum.
-
-The target runs the offline repository checks, then writes:
+The package command writes:
 
 ```text
 dist/endgame-plugin-<manifest-version>.zip
 ```
 
-The archive has the plugin manifest at its root and can be loaded directly by
-Claude Code 2.1.128 or later:
+The builder includes the plugin manifest, license, MCP configuration, and every
+tracked file under the seven approved public skill directories. It uses sorted
+paths and fixed ZIP timestamps, rejects unsafe paths and untracked skill
+resources, and verifies that the ZIP file list exactly matches the Git runtime
+payload.
+
+## Prepare A Release
+
+1. Merge reviewed runtime changes with a corresponding version bump in
+   `.claude-plugin/plugin.json`.
+2. Confirm `main` passes every required check.
+3. Create an annotated `vMAJOR.MINOR.PATCH` tag whose version exactly matches
+   the plugin manifest.
+4. Push the tag.
+
+For example:
 
 ```bash
-claude --plugin-dir ./dist/endgame-plugin-0.1.6.zip
+git switch main
+git pull --ff-only
+git tag -s v0.1.7 -m "Endgame plugin v0.1.7"
+git push origin v0.1.7
 ```
 
-The builder uses sorted paths, fixed ZIP timestamps, and preserved Unix file
-modes so the same source and manifest version produce the same archive bytes.
-It rejects unsafe or incomplete archives and prints the artifact SHA-256 after
-every build.
+The `release` workflow checks out that exact tag, reruns repository and official
+Claude validation, builds the deterministic ZIP, generates its SHA-256 file,
+and attaches both files to the matching GitHub Release. The workflow can be
+rerun manually for an existing tag without changing the release identity.
 
-## Verify The Archive
+## Version And Marketplace Behavior
 
-```bash
-make smoke-package
-```
+`.claude-plugin/plugin.json` is the sole plugin version source. Claude uses that
+version as its cache key, so every runtime change requires a version bump. Pull
+request CI enforces this rule.
 
-This rebuilds the ZIP, asks Claude to load it, and verifies discovery of the
-scoped Endgame MCP server. The archive contains only the plugin manifest, MCP
-configuration, public skills, and license.
+The Endgame-hosted marketplace uses `"source": "./"`, so Git installations and
+tagged archives derive from the same repository content. After Anthropic accepts
+the plugin into its directory, Anthropic mirrors future public-repository
+updates and owns the external marketplace pin.
 
-## Release State
+## Release Automation Boundary
 
-- `dist/` is ignored and release artifacts are not committed.
-- The manifest version controls the archive filename and installed plugin
-  version. Version bumps are manual in v1.
-- Releases are published through the `endgame-plugins` marketplace. Its plugin
-  source uses a full approved commit SHA.
-- Version bumps and marketplace source updates are manual.
-- Publish only from a clean, reviewed commit that passes the package smoke test.
+Release Please is intentionally deferred. The repository currently restricts
+all branch and tag creation to an explicit maintainer bypass, while Release
+Please needs an automation identity that can create release branches and tags.
+Add it only after defining a dedicated release identity and a narrowly reviewed
+ruleset bypass. Do not grant every GitHub Actions workflow unrestricted ref
+write access merely to enable automated tagging.

@@ -11,6 +11,10 @@ endgame-plugin/
   skills/
     <skill-name>/
       SKILL.md
+      references/  (optional)
+      examples/    (optional)
+      assets/      (optional)
+      scripts/     (optional)
   LICENSE
 ```
 
@@ -24,8 +28,10 @@ and `docs/` are excluded from the customer archive.
 
 ## Skills
 
-Each skill belongs in `skills/<skill-slug>/SKILL.md`. Skill slugs should be
-lowercase, hyphen-delimited, and stable because users invoke them by namespace.
+Each skill belongs in `skills/<skill-slug>/`. Skill slugs should be lowercase,
+hyphen-delimited, and stable because users invoke them by namespace. Packaging
+includes every tracked file below each approved public skill directory, so a
+skill's references, examples, assets, and scripts travel with its `SKILL.md`.
 
 The package contains only the seven public skills. Each skill applies the
 MCP-backed identity and scope contract documented in `docs/user-context.md`
@@ -50,5 +56,7 @@ Connector setup and smoke-test instructions live in `mcp/README.md`.
 ## Scripts
 
 Repository checks live in `scripts/` and must run without vendored dependencies.
-`scripts/package_plugin.py` builds the ignored ZIP artifact, and
-`scripts/smoke_plugin.py` verifies MCP discovery from source or package form.
+`scripts/package_plugin.py` derives the runtime payload from tracked Git files,
+builds the ignored ZIP artifact, and verifies that its file list matches the
+Git installation. `scripts/smoke_plugin.py` verifies MCP discovery from source
+or package form.

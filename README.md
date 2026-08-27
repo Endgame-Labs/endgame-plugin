@@ -32,6 +32,10 @@ claude plugin marketplace add https://github.com/Endgame-Labs/endgame-plugin.git
 claude plugin install endgame@endgame-plugins
 ```
 
+Endgame also plans to submit this public repository to Anthropic's plugin
+directory. Until that listing is approved, the Endgame-hosted marketplace above
+is the supported Claude Code installation path.
+
 ### Development From Source
 
 ```bash
@@ -92,6 +96,7 @@ make fmt
 make format
 make lint
 make validate
+make test
 make package
 make smoke
 make smoke-package
@@ -102,6 +107,8 @@ make check
 - `make format` is kept as an alias for people coming from package-script repos.
 - `make lint` checks text hygiene and placeholder leakage.
 - `make validate` validates the manifest, package layout, skills, and MCP config.
+- `make test` checks that Git and ZIP installations contain the same runtime
+  files and that release metadata is consistent.
 - `make package` builds a deterministic installable ZIP under `dist/`.
 - `make smoke` asks the local Claude CLI to discover the bundled MCP server.
 - `make smoke-package` repeats discovery from the packaged ZIP.
