@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -33,7 +33,9 @@ jobs:
           python-version: "3.11"
 
       - name: Verify tag and plugin version
-        run: python scripts/check_release_tag.py "$RELEASE_TAG"
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          python scripts/check_release_tag.py "$RELEASE_TAG"
 
       - name: Run repository checks
         run: make check
@@ -52,7 +54,7 @@ jobs:
           cd dist
           sha256sum "$artifact" > "$artifact.sha256"
 
-      - name: Create or update GitHub Release
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -60,7 +62,15 @@ jobs:
           artifact="dist/endgame-plugin-${version}.zip"
           checksum="${artifact}.sha256"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$artifact" "$checksum" --clobber
+            download_dir="$(mktemp -d)"
+            trap 'rm -rf "$download_dir"' EXIT
+            gh release download "$RELEASE_TAG" \
+              --pattern "$(basename "$artifact")" \
+              --pattern "$(basename "$checksum")" \
+              --dir "$download_dir"
+            cmp "$artifact" "$download_dir/$(basename "$artifact")"
+            cmp "$checksum" "$download_dir/$(basename "$checksum")"
+            echo "Existing release assets match this deterministic build."
           else
             gh release create "$RELEASE_TAG" "$artifact" "$checksum" \
               --verify-tag \

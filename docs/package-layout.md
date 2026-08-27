@@ -57,6 +57,7 @@ Connector setup and smoke-test instructions live in `mcp/README.md`.
 
 Repository checks live in `scripts/` and must run without vendored dependencies.
 `scripts/package_plugin.py` derives the runtime payload from tracked Git files,
-builds the ignored ZIP artifact, and verifies that its file list matches the
-Git installation. `scripts/smoke_plugin.py` verifies MCP discovery from source
-or package form.
+reads packaged bytes and modes directly from committed `HEAD`, builds the
+ignored ZIP artifact, and verifies that its file list matches the Git
+installation.
+`scripts/smoke_plugin.py` verifies MCP discovery from source or package form.

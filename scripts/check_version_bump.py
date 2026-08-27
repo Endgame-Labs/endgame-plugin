@@ -4,17 +4,17 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
-
-from package_plugin import PUBLIC_SKILLS
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ".claude-plugin/plugin.json"
 RUNTIME_ROOT_FILES = {MANIFEST, "LICENSE", "mcp/endgame.json"}
-RUNTIME_PREFIXES = tuple(f"skills/{skill}/" for skill in PUBLIC_SKILLS)
+RUNTIME_PREFIXES = ("skills/",)
+VERSION_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
 def git_output(args: list[str]) -> str:
@@ -23,16 +23,35 @@ def git_output(args: list[str]) -> str:
     ).strip()
 
 
+def git_paths(args: list[str]) -> list[str]:
+    output = subprocess.check_output(["git", "-C", str(ROOT), *args])
+    return [
+        path.decode("utf-8", "surrogateescape")
+        for path in output.split(b"\0")
+        if path
+    ]
+
+
+def semantic_version(version: str) -> tuple[int, int, int]:
+    match = VERSION_RE.fullmatch(version)
+    if match is None:
+        raise ValueError(f"invalid plugin version {version!r}; expected MAJOR.MINOR.PATCH")
+    return tuple(int(part) for part in match.groups())
+
+
 def manifest_version(revision: str) -> str:
     manifest = json.loads(git_output(["show", f"{revision}:{MANIFEST}"]))
     version = manifest.get("version")
     if not isinstance(version, str) or not version:
         raise ValueError(f"{revision} has no plugin manifest version")
+    semantic_version(version)
     return version
 
 
 def runtime_changes(base: str, head: str) -> list[str]:
-    changed = git_output(["diff", "--name-only", base, head]).splitlines()
+    # Disabling rename detection exposes both sides of a move. NUL delimiters
+    # preserve every valid Git filename, including whitespace and non-ASCII.
+    changed = git_paths(["diff", "--no-renames", "--name-only", "-z", base, head])
     return sorted(
         path
         for path in changed
@@ -58,10 +77,10 @@ def main() -> int:
         print(f"plugin version check error: {exc}")
         return 1
 
-    if base_version == head_version:
+    if semantic_version(head_version) <= semantic_version(base_version):
         print(
-            "plugin runtime changed without updating "
-            f"{MANIFEST} version ({base_version}): {', '.join(changed)}"
+            "plugin runtime changed without a greater semantic version in "
+            f"{MANIFEST} ({base_version} -> {head_version}): {', '.join(changed)}"
         )
         return 1
 

@@ -23,9 +23,10 @@ dist/endgame-plugin-<manifest-version>.zip
 
 The builder includes the plugin manifest, license, MCP configuration, and every
 tracked file under the seven approved public skill directories. It uses sorted
-paths and fixed ZIP timestamps, rejects unsafe paths and untracked skill
-resources, and verifies that the ZIP file list exactly matches the Git runtime
-payload.
+paths and fixed ZIP timestamps, rejects unsafe paths, untracked skill resources,
+and non-file Git entries, and reads packaged bytes and modes directly from
+`HEAD`. It verifies that the ZIP file list exactly matches the committed Git
+runtime payload, so uncommitted working-tree changes cannot alter the archive.
 
 ## Prepare A Release
 
@@ -45,16 +46,21 @@ git tag -s v0.1.7 -m "Endgame plugin v0.1.7"
 git push origin v0.1.7
 ```
 
-The `release` workflow checks out that exact tag, reruns repository and official
+The `release` workflow checks out the fully qualified tag, verifies that its
+peeled commit is both `HEAD` and part of `main`, reruns repository and official
 Claude validation, builds the deterministic ZIP, generates its SHA-256 file,
-and attaches both files to the matching GitHub Release. The workflow can be
-rerun manually for an existing tag without changing the release identity.
+and attaches both files to the matching GitHub Release. A manual rerun succeeds
+for an existing release only when both published assets byte-for-byte match the
+new deterministic build; it never replaces published assets.
 
 ## Version And Marketplace Behavior
 
 `.claude-plugin/plugin.json` is the sole plugin version source. Claude uses that
 version as its cache key, so every runtime change requires a version bump. Pull
-request CI enforces this rule.
+request CI enforces this rule and requires the new semantic version to be
+greater than the version on the current `main` branch. The `main` ruleset uses
+strict required checks so a stale pull request must revalidate after another
+runtime release merges.
 
 The Endgame-hosted marketplace uses `"source": "./"`, so Git installations and
 tagged archives derive from the same repository content. After Anthropic accepts
